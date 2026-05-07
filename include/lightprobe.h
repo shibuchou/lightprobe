@@ -14,8 +14,11 @@ int lp_probe_enable(struct probe_desc *desc);
 int lp_probe_disable(struct probe_desc *desc);
 
 int lp_probe_manager_init(void);
+int lp_probe_manager_load(void);
+int lp_probe_manager_save(void);
 struct probe_desc *lp_probe_manager_alloc(const struct lp_probe_spec *spec);
 struct probe_desc *lp_probe_manager_find(pid_t pid, const char *func_name);
+const struct probe_desc *lp_probe_manager_at(int index);
 void lp_probe_manager_remove(struct probe_desc *desc);
 
 #ifdef __cplusplus
@@ -23,4 +26,3 @@ void lp_probe_manager_remove(struct probe_desc *desc);
 #endif
 
 #endif
-

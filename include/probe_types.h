@@ -23,6 +23,10 @@ struct probe_desc {
     uint64_t entry_stub_addr;
     uint64_t ret_stub_addr;
     uint64_t config_addr;
+    uint64_t event_buffer_addr;
+    uint64_t shadow_stack_addr;
+    uint64_t runtime_base_addr;
+    uint64_t runtime_size;
 
     unsigned char original_code[LP_MAX_ORIGINAL_CODE];
     int original_len;
@@ -42,4 +46,3 @@ struct lp_probe_spec {
 };
 
 #endif
-

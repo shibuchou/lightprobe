@@ -5,6 +5,7 @@ add_executable(lightprobe
     cmd_enable.c
     cmd_disable.c
     cmd_events.c
+    cmd_list.c
 )
 
 target_include_directories(lightprobe PRIVATE
@@ -14,4 +15,3 @@ target_include_directories(lightprobe PRIVATE
 target_link_libraries(lightprobe PRIVATE
     lightprobe_injector
 )
-

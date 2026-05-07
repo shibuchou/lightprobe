@@ -11,6 +11,7 @@ BIN := $(BUILD_DIR)/lightprobe
 OBJS := \
 	$(BUILD_DIR)/controller/controller_stub.o \
 	$(BUILD_DIR)/runtime/event_buffer.o \
+	$(BUILD_DIR)/runtime/remote_layout.o \
 	$(BUILD_DIR)/runtime/runtime_config.o \
 	$(BUILD_DIR)/runtime/shadow_stack.o \
 	$(BUILD_DIR)/injector/patch_x86_64.o \
@@ -24,7 +25,8 @@ OBJS := \
 	$(BUILD_DIR)/cli/cmd_detach.o \
 	$(BUILD_DIR)/cli/cmd_enable.o \
 	$(BUILD_DIR)/cli/cmd_disable.o \
-	$(BUILD_DIR)/cli/cmd_events.o
+	$(BUILD_DIR)/cli/cmd_events.o \
+	$(BUILD_DIR)/cli/cmd_list.o
 
 .PHONY: all clean
 
@@ -43,4 +45,3 @@ $(BUILD_DIR)/%.o: %.S
 
 clean:
 	rm -rf $(BUILD_DIR)
-

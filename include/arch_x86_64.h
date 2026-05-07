@@ -4,7 +4,7 @@
 #include <stdint.h>
 
 #define LP_X86_64_JMP_REL32_SIZE 5
-#define LP_X86_64_ABS_JMP_SIZE 12
+#define LP_X86_64_ABS_JMP_SIZE 17
 
 struct lp_x86_64_regs_snapshot {
     uint64_t r15;
@@ -38,4 +38,3 @@ static inline void lp_x86_64_collect_args(const struct lp_x86_64_regs_snapshot *
 }
 
 #endif
-

@@ -2,6 +2,8 @@
 
 轻量级用户态动态探针原型，面向 2026 OS 功能挑战赛“Lightweight Dynamic probe for User Space”。
 
+队伍名：原神启动
+
 当前仓库先固定成员 A 的主链路边界：
 
 - `include/`：公共 ABI、事件格式、controller/injector/runtime 接口。
@@ -29,8 +31,14 @@ cmake --build build
 sudo ./build/lightprobe attach --pid <pid> --lib libc.so.6 --func getpid --ret
 sudo ./build/lightprobe disable --pid <pid> --func getpid
 sudo ./build/lightprobe enable --pid <pid> --func getpid
-sudo ./build/lightprobe events --pid <pid>
+sudo ./build/lightprobe events --pid <pid> --func getpid --limit 32
+sudo ./build/lightprobe events --pid <pid> --func getpid --limit 32 --csv
 sudo ./build/lightprobe detach --pid <pid> --func getpid
+./build/lightprobe list
 ```
 
 当前 `controller/` 仍是桩实现，真实 attach、maps/ELF 解析、远程 mmap 接入后，`injector/` 的 patch 主链路即可进入最小闭环验证。
+
+CLI 会把已安装探针元数据保存到 `/tmp/lightprobe_state.bin`，这样 `attach`、`detach`、`enable`、`disable` 这些独立命令可以共享同一张 probe 表。该文件只保存本机联调状态，不应提交到仓库。
+
+成员 A 的远程 runtime 布局见 `docs/member_a_runtime_layout.md`。
