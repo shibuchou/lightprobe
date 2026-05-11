@@ -1,5 +1,7 @@
 #include "runtime.h"
 
+#include <stddef.h>
+
 int lp_runtime_config_init(struct lp_runtime_config *config, const struct probe_desc *desc)
 {
     config->enabled = desc->enabled ? 1U : 0U;
@@ -12,4 +14,9 @@ int lp_runtime_config_init(struct lp_runtime_config *config, const struct probe_
 void lp_runtime_config_set_enabled(struct lp_runtime_config *config, int enabled)
 {
     config->enabled = enabled ? 1U : 0U;
+}
+
+uint64_t lp_runtime_config_enabled_addr(const struct probe_desc *desc)
+{
+    return desc->config_addr + offsetof(struct lp_runtime_config, enabled);
 }

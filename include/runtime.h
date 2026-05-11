@@ -58,6 +58,7 @@ struct lp_remote_runtime_layout {
 
 int lp_runtime_config_init(struct lp_runtime_config *config, const struct probe_desc *desc);
 void lp_runtime_config_set_enabled(struct lp_runtime_config *config, int enabled);
+uint64_t lp_runtime_config_enabled_addr(const struct probe_desc *desc);
 void lp_event_buffer_init(struct lp_event_buffer *buffer);
 void lp_shadow_stack_init(struct lp_shadow_stack *stack);
 

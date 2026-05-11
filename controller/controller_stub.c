@@ -135,16 +135,16 @@ int lp_remote_write(
 }
 
 
-// int lp_remote_mmap(
-//     pid_t pid,
-//     size_t size,
-//     int prot,
-//     uint64_t *remote_addr)
-// {
-//     return remote_mmap(
-//         pid,
-//         size,
-//         prot,
-//         remote_addr
-//     );
-// }
+int lp_remote_mmap(
+    pid_t pid,
+    size_t size,
+    int prot,
+    uint64_t *remote_addr)
+{
+    return remote_mmap(
+        pid,
+        size,
+        prot,
+        remote_addr
+    );
+}

@@ -22,6 +22,21 @@ struct lp_probe_state_file {
 
 static struct probe_desc g_probe_table[LP_MAX_PROBES];
 
+static int lp_update_remote_enabled(struct probe_desc *desc, int enabled)
+{
+    uint32_t remote_enabled = enabled ? 1U : 0U;
+
+    if (desc->config_addr == 0) {
+        errno = ENOENT;
+        return -1;
+    }
+
+    return lp_remote_write(desc->pid,
+                           lp_runtime_config_enabled_addr(desc),
+                           &remote_enabled,
+                           sizeof(remote_enabled));
+}
+
 static int lp_install_remote_runtime(pid_t pid, struct probe_desc *desc)
 {
     struct lp_remote_runtime_layout sizing;
@@ -296,6 +311,9 @@ int lp_probe_enable(struct probe_desc *desc)
         errno = EINVAL;
         return -1;
     }
+    if (lp_update_remote_enabled(desc, 1) < 0) {
+        return -1;
+    }
     desc->enabled = 1;
     if (lp_probe_manager_save() < 0) {
         return -1;
@@ -307,6 +325,9 @@ int lp_probe_disable(struct probe_desc *desc)
 {
     if (desc == NULL) {
         errno = EINVAL;
+        return -1;
+    }
+    if (lp_update_remote_enabled(desc, 0) < 0) {
         return -1;
     }
     desc->enabled = 0;

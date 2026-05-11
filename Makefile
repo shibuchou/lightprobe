@@ -10,6 +10,11 @@ BIN := $(BUILD_DIR)/lightprobe
 
 OBJS := \
 	$(BUILD_DIR)/controller/controller_stub.o \
+	$(BUILD_DIR)/controller/elf_resolver.o \
+	$(BUILD_DIR)/controller/maps_parser.o \
+	$(BUILD_DIR)/controller/process_attach.o \
+	$(BUILD_DIR)/controller/remote_mem_ptrace.o \
+	$(BUILD_DIR)/controller/thread_control.o \
 	$(BUILD_DIR)/runtime/event_buffer.o \
 	$(BUILD_DIR)/runtime/remote_layout.o \
 	$(BUILD_DIR)/runtime/runtime_config.o \

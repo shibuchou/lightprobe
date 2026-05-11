@@ -103,3 +103,32 @@ sudo ./build/lightprobe events --pid <pid> --func getpid --limit 32 --csv
 ```
 
 该功能依赖成员 B 的 `lp_remote_read()`。在 controller 仍是桩实现时，如果没有已安装 probe，会报告 `probe not found`；如果有 probe 但 remote read 未接通，会报告对应 `errno`。
+
+## 动态开关
+
+`enable/disable` 会同时更新：
+
+```text
+1. 本地 /tmp/lightprobe_state.bin 中的 desc->enabled。
+2. 目标进程远程 runtime 中 config->enabled 字段。
+```
+
+远程写入地址为：
+
+```c
+desc->config_addr + offsetof(struct lp_runtime_config, enabled)
+```
+
+因此 `entry_stub` 每次执行时读取的 `config->enabled` 与 CLI 状态保持一致。该功能依赖成员 B 的 `lp_remote_write()`。
+
+## controller 当前状态
+
+成员 B 已接入：
+
+- attach/detach
+- stop/resume all threads
+- maps parser
+- ELF symbol resolver
+- ptrace remote read/write
+
+`remote_mmap()` 当前仍是 `ENOSYS` 占位实现，因此 attach 链路会在远程 runtime 分配阶段停止。等成员 B 补完 `remote_mmap()` 后，当前 A 侧的 runtime layout、stub 写入、entry patch、events 读取链路即可进入实测。

@@ -193,6 +193,20 @@ int remote_write(
 
 /** TODO    后续开发 remote_mmap**/
 
+int remote_mmap(pid_t pid,
+                size_t size,
+                int prot,
+                uint64_t *remote_addr)
+{
+    (void)pid;
+    (void)size;
+    (void)prot;
+    (void)remote_addr;
+
+    errno = ENOSYS;
+    return -1;
+}
+
 // int remote_mmap(pid_t pid,
 //                 size_t size,
 //                 int prot,
