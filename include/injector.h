@@ -8,6 +8,11 @@
 #include "probe_types.h"
 
 int lp_x86_64_make_rel_jmp(uint64_t from_addr, uint64_t to_addr, unsigned char out[5]);
+int lp_x86_64_insn_len(const unsigned char *code, size_t max_len, size_t *insn_len);
+int lp_x86_64_calc_patch_len(const unsigned char *code,
+                             size_t code_len,
+                             size_t min_len,
+                             size_t *patch_len);
 int lp_x86_64_read_original_code(pid_t pid, struct probe_desc *desc, int min_len);
 int lp_x86_64_patch_entry(pid_t pid, const struct probe_desc *desc);
 int lp_x86_64_restore_entry(pid_t pid, const struct probe_desc *desc);

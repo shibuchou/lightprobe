@@ -23,6 +23,9 @@ int lp_x86_64_make_rel_jmp(uint64_t from_addr, uint64_t to_addr, unsigned char o
 
 int lp_x86_64_read_original_code(pid_t pid, struct probe_desc *desc, int min_len)
 {
+    unsigned char probe_code[LP_MAX_ORIGINAL_CODE];
+    size_t patch_len = 0;
+
     if (min_len < LP_X86_64_JMP_REL32_SIZE) {
         min_len = LP_X86_64_JMP_REL32_SIZE;
     }
@@ -31,9 +34,22 @@ int lp_x86_64_read_original_code(pid_t pid, struct probe_desc *desc, int min_len
         return -1;
     }
 
-    desc->original_len = min_len;
-    return lp_remote_read(pid, desc->target_addr, desc->original_code,
-                          (size_t)desc->original_len);
+    if (lp_remote_read(pid, desc->target_addr, probe_code, sizeof(probe_code)) < 0) {
+        return -1;
+    }
+
+    if (lp_x86_64_calc_patch_len(probe_code, sizeof(probe_code),
+                                 (size_t)min_len, &patch_len) < 0) {
+        return -1;
+    }
+    if (patch_len > LP_MAX_ORIGINAL_CODE) {
+        errno = EOVERFLOW;
+        return -1;
+    }
+
+    memcpy(desc->original_code, probe_code, patch_len);
+    desc->original_len = (int)patch_len;
+    return 0;
 }
 
 int lp_x86_64_patch_entry(pid_t pid, const struct probe_desc *desc)

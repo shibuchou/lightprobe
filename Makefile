@@ -19,6 +19,7 @@ OBJS := \
 	$(BUILD_DIR)/runtime/remote_layout.o \
 	$(BUILD_DIR)/runtime/runtime_config.o \
 	$(BUILD_DIR)/runtime/shadow_stack.o \
+	$(BUILD_DIR)/injector/instruction_x86_64.o \
 	$(BUILD_DIR)/injector/patch_x86_64.o \
 	$(BUILD_DIR)/injector/probe_manager.o \
 	$(BUILD_DIR)/injector/trampoline_x86_64.o \
@@ -33,7 +34,7 @@ OBJS := \
 	$(BUILD_DIR)/cli/cmd_events.o \
 	$(BUILD_DIR)/cli/cmd_list.o
 
-.PHONY: all clean
+.PHONY: all clean test
 
 all: $(BIN)
 
@@ -50,3 +51,10 @@ $(BUILD_DIR)/%.o: %.S
 
 clean:
 	rm -rf $(BUILD_DIR)
+
+test: $(BUILD_DIR)/tests/test_instruction_len
+	$<
+
+$(BUILD_DIR)/tests/test_instruction_len: tests/unit/test_instruction_len.c injector/instruction_x86_64.c include/injector.h include/probe_types.h
+	@mkdir -p $(dir $@)
+	$(CC) $(CFLAGS) -o $@ tests/unit/test_instruction_len.c injector/instruction_x86_64.c

@@ -1,4 +1,5 @@
 add_library(lightprobe_injector
+    instruction_x86_64.c
     patch_x86_64.c
     probe_manager.c
     trampoline_x86_64.c
@@ -15,4 +16,3 @@ target_link_libraries(lightprobe_injector PUBLIC
     lightprobe_controller
     lightprobe_runtime
 )
-

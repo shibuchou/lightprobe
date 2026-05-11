@@ -80,7 +80,8 @@ target function -> entry_stub -> event buffer -> trampoline -> target+original_l
 - `timestamp_ns` 暂时写 0。
 - `tid` 暂时写 0。
 - 暂时只写 entry event。
-- 原始指令长度暂时按 5 字节最小 patch 长度处理，后续需要指令长度解析。
+- 已实现第一版 x86_64 指令长度解析，入口 patch 会按完整指令边界覆盖至少 5 字节。
+- 指令长度解析覆盖常见 libc 函数入口指令；遇到复杂 EVEX/VEX/罕见指令时会返回错误，避免错误切断指令。
 - return probe 需要替换栈顶返回地址并维护 shadow stack。
 
 ## 事件读取
