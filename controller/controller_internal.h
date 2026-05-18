@@ -57,10 +57,31 @@ int remote_write(
     size_t len
 );
 
+/* gadget_finder.c */
+int resolve_gadget_runtime(
+    pid_t pid,
+    const char *module_name,
+    const uint8_t *pattern,
+    size_t pattern_len,
+    uint64_t *runtime_addr);    
+
+int remote_syscall(
+    pid_t pid,
+    long syscall_no,
+
+    uint64_t arg1,
+    uint64_t arg2,
+    uint64_t arg3,
+    uint64_t arg4,
+    uint64_t arg5,
+    uint64_t arg6,
+
+    uint64_t *retval);
+
 int remote_mmap(pid_t pid,
-                size_t size,
-                int prot,
-                uint64_t *remote_addr);
+size_t size,
+int port,
+uint64_t *remote_addr);
 
 int remote_munmap(pid_t pid,
                   uint64_t remote_addr,

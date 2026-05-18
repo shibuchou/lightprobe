@@ -191,105 +191,22 @@ int remote_write(
 
 
 
-/** TODO    后续开发 remote_mmap**/
-
-int remote_mmap(pid_t pid,
-                size_t size,
-                int prot,
-                uint64_t *remote_addr)
+int lp_remote_mmap(
+    pid_t pid,
+    size_t size,
+    int prot,
+    uint64_t *remote_addr)
 {
-    (void)pid;
-    (void)size;
-    (void)prot;
-    (void)remote_addr;
-
-    errno = ENOSYS;
-    return -1;
+    return remote_mmap(
+        pid,
+        size,
+        prot,
+        remote_addr
+    );
 }
 
-int remote_munmap(pid_t pid,
-                  uint64_t remote_addr,
-                  size_t size)
-{
-    (void)pid;
-    (void)remote_addr;
-    (void)size;
 
-    errno = ENOSYS;
-    return -1;
+int remote_mmap(pid_t pid,size_t size,int prot,uint64_t *remote_addr){
+    return remote_syscall(pid,__NR_mmap,0,size,prot,MAP_PRIVATE |
+    MAP_ANONYMOUS,(uint64_t)-1,0,remote_addr);
 }
-
-// int remote_mmap(pid_t pid,
-//                 size_t size,
-//                 int prot,
-//                 uint64_t *remote_addr)
-// {
-//     struct user_regs_struct regs;
-//     struct user_regs_struct saved_regs;
-
-//     uint64_t rip;
-
-//     long original_code;
-
-//     long syscall_code;
-
-//     int status;
-
-//     /*
-//      * 获取寄存器
-//      */
-//     if (ptrace(PTRACE_GETREGS,
-//                pid,
-//                NULL,
-//                &regs) < 0) {
-
-//         return -1;
-//     }
-
-//     memcpy(&saved_regs,
-//            &regs,
-//            sizeof(regs));
-
-//     rip = regs.rip;
-
-//     /*
-//      * 保存原始代码
-//      */
-//     errno = 0;
-
-//     original_code = ptrace(PTRACE_PEEKTEXT,
-//                            pid,
-//                            (void *)rip,
-//                            NULL);
-
-//     if (original_code == -1 &&
-//         errno != 0) {
-
-//         return -1;
-//     }
-
-//     /*
-//      * syscall; int3
-//      *
-//      * 0f 05 = syscall
-//      * cc    = int3
-//      */
-//     syscall_code =
-//         (original_code & ~0xFFFFFFL) |
-//         0xCC050FL;
-
-//     if (ptrace(PTRACE_POKETEXT,
-//                pid,
-//                (void *)rip,
-//                (void *)syscall_code) < 0) {
-
-//         return -1;
-//     }
-
-//     /*
-//      * setup mmap syscall
-//      */
-//     regs.rax = __NR_mmap;
-
-//     regs.rdi = 0;
-// }

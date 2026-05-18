@@ -26,7 +26,8 @@ SRCS := \
 	thread_control.c \
 	maps_parser.c \
 	elf_resolver.c \
-	remote_mem_ptrace.c
+	remote_mem_ptrace.c\
+	remote_syscall.c
 
 # =========================
 # object files
