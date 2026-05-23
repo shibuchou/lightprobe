@@ -191,20 +191,6 @@ int remote_write(
 
 
 
-int lp_remote_mmap(
-    pid_t pid,
-    size_t size,
-    int prot,
-    uint64_t *remote_addr)
-{
-    return remote_mmap(
-        pid,
-        size,
-        prot,
-        remote_addr
-    );
-}
-
 
 int remote_mmap(pid_t pid,size_t size,int prot,uint64_t *remote_addr){
     return remote_syscall(pid,__NR_mmap,0,size,prot,MAP_PRIVATE |

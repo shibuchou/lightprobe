@@ -83,8 +83,4 @@ size_t size,
 int port,
 uint64_t *remote_addr);
 
-int remote_munmap(pid_t pid,
-                  uint64_t remote_addr,
-                  size_t size);
-
 #endif
