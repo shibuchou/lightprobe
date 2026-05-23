@@ -37,6 +37,23 @@ static int lp_update_remote_enabled(struct probe_desc *desc, int enabled)
                            sizeof(remote_enabled));
 }
 
+static void lp_cleanup_remote_runtime_best_effort(struct probe_desc *desc)
+{
+    if (desc->runtime_base_addr == 0 || desc->runtime_size == 0) {
+        return;
+    }
+
+    if (lp_remote_munmap(desc->pid, desc->runtime_base_addr,
+                         (size_t)desc->runtime_size) < 0) {
+        /*
+         * Remote munmap is optional at this stage. Detach must still restore
+         * the original instruction even when remote runtime cleanup is not
+         * implemented yet.
+         */
+        return;
+    }
+}
+
 static int lp_install_remote_runtime(pid_t pid, struct probe_desc *desc)
 {
     struct lp_remote_runtime_layout sizing;
@@ -297,6 +314,7 @@ int lp_probe_detach(struct probe_desc *desc)
         return -1;
     }
 
+    lp_cleanup_remote_runtime_best_effort(desc);
     (void)lp_resume_all_threads(desc->pid);
     lp_probe_manager_remove(desc);
     if (lp_probe_manager_save() < 0) {

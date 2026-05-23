@@ -52,9 +52,19 @@ $(BUILD_DIR)/%.o: %.S
 clean:
 	rm -rf $(BUILD_DIR)
 
-test: $(BUILD_DIR)/tests/test_instruction_len
-	$<
+UNIT_TESTS := \
+	$(BUILD_DIR)/tests/test_instruction_len \
+	$(BUILD_DIR)/tests/test_stub_builder
+
+test: $(UNIT_TESTS)
+	@for test in $(UNIT_TESTS); do \
+		$$test || exit $$?; \
+	done
 
 $(BUILD_DIR)/tests/test_instruction_len: tests/unit/test_instruction_len.c injector/instruction_x86_64.c include/injector.h include/probe_types.h
 	@mkdir -p $(dir $@)
 	$(CC) $(CFLAGS) -o $@ tests/unit/test_instruction_len.c injector/instruction_x86_64.c
+
+$(BUILD_DIR)/tests/test_stub_builder: tests/unit/test_stub_builder.c injector/trampoline_x86_64.c runtime/remote_layout.c include/injector.h include/runtime.h include/probe_types.h include/event.h include/arch_x86_64.h
+	@mkdir -p $(dir $@)
+	$(CC) $(CFLAGS) -o $@ tests/unit/test_stub_builder.c injector/trampoline_x86_64.c runtime/remote_layout.c

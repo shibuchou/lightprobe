@@ -207,6 +207,18 @@ int remote_mmap(pid_t pid,
     return -1;
 }
 
+int remote_munmap(pid_t pid,
+                  uint64_t remote_addr,
+                  size_t size)
+{
+    (void)pid;
+    (void)remote_addr;
+    (void)size;
+
+    errno = ENOSYS;
+    return -1;
+}
+
 // int remote_mmap(pid_t pid,
 //                 size_t size,
 //                 int prot,

@@ -20,6 +20,6 @@ int lp_resolve_symbol(pid_t pid,
 int lp_remote_read(pid_t pid, uint64_t remote_addr, void *buf, size_t len);
 int lp_remote_write(pid_t pid, uint64_t remote_addr, const void *buf, size_t len);
 int lp_remote_mmap(pid_t pid, size_t size, int prot, uint64_t *remote_addr);
+int lp_remote_munmap(pid_t pid, uint64_t remote_addr, size_t size);
 
 #endif
-
