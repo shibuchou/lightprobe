@@ -208,20 +208,52 @@ tests/scripts/run_multithread_malloc_probe_smoke.sh
 
 所有闭环验证完成后，`./build/lightprobe list` 为空，说明本地 probe 状态能正确清理。
 
-## 7. 当前实现边界
+## 7. benchmark 与展示材料
+
+当前仓库已经准备了 smoke 级 benchmark 输入和演示材料：
+
+- 单线程目标：`target_getpid_loop`、`target_malloc_loop`。
+- 多线程目标：`target_multithread_getpid`、`target_multithread_malloc`。
+- 闭环脚本：`tests/scripts/run_*_probe_smoke.sh`。
+- 输出来源：`lightprobe events` 普通文本或 `--csv`。
+
+展示时建议使用以下证据链：
+
+```text
+attach 成功：attached probe_id=0 pid=<pid> libc.so.6:<func> target=0x... ret=1
+events 输出：entry/return 成对出现，tid 可区分不同线程
+return event：getpid retval 等于目标 pid，malloc retval 为堆地址
+detach 成功：detached pid=<pid> func=<func>
+list 清理：只剩表头，说明本地状态已清理
+```
+
+性能说明口径：
+
+- event buffer 是固定容量 ring buffer，当前容量为 4096 条事件。
+- entry/return stub 使用 `lock xadd` 分配 slot，多线程下避免多个线程覆盖同一条新事件。
+- return probe 通过 shadow stack 维护每个线程的原始返回地址和 entry timestamp。
+- 当前 benchmark 以功能闭环和事件正确性为主，尚未做完整吞吐量、延迟分位数和长时间压力测试。
+
+## 8. 当前实现边界
 
 当前实现已经能支撑比赛演示和基础功能验证，但仍有边界：
 
+- 当前支持 Linux/x86_64 用户态动态库函数。
+- hook 安装、远程读写和远程 syscall 依赖 `ptrace`，非子进程调试通常需要 `sudo` 或 ptrace 权限。
+- return probe 已支持多线程基础场景，但不是完整工业级 unwinder。
 - 时间戳仍使用 syscall 获取，正确性优先，性能还可优化。
 - shadow stack 仍采用固定大小数组和线性扫描，后续可优化线程槽管理。
 - fallback 仍然比较激进，后续可以设计更温和的错误路径。
-- 目前尚未补 benchmark、批量压力测试和展示材料。
+- 递归、极高并发、信号中断、线程异步退出等复杂场景属于后续增强。
+- 当前远程 runtime 使用 RWX 映射，后续可以拆分为 RW 数据区和 RX 代码区。
 
-## 8. 下一步优先级
+## 9. 下一步优先级
 
 当前建议优先级：
 
-1. 整理 README、验证脚本和提交范围。
-2. 补 benchmark / 压测脚本。
-3. 生成比赛展示所需的命令链和结果截图。
-4. 最后再考虑性能优化和更温和的异常路径。
+1. 固化 benchmark：用 `events --csv` 生成批量统计，统计事件数、线程分布、return duration。
+2. 扩展验证函数：增加 `strlen`、`write`、`free` 等常见动态库函数。
+3. 加强压力测试：更多线程、更高调用频率、递归和长时间运行。
+4. 优化性能：减少 syscall 次数，优化 shadow stack 线程槽查找，降低 stub 热路径开销。
+5. 加强健壮性：处理信号中断、线程退出、异常返回路径和更复杂函数入口。
+6. 改进 runtime 权限：拆分 RW/RX 映射，减少 RWX 页面。

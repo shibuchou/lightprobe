@@ -195,23 +195,6 @@ attached probe_id=0 pid=<pid> libc.so.6:getpid target=0x... ret=1
 
 注意：在默认 `kernel.yama.ptrace_scope=1` 的系统上，普通用户只能 ptrace 自己的子进程；调试非子进程通常需要 `sudo`。
 
-### 5.1.2 已验证的最小闭环
-
-目前已经通过 `sudo` 版最小闭环验证：
-
-```text
-target_getpid_loop -> attach(getpid --ret) -> events -> detach
-target_malloc_loop -> attach(malloc --ret) -> events -> detach
-```
-
-当前已经确认：
-
-- 单线程 `getpid --ret`：attach / events / detach 全部成功，`retval == target_pid`
-- 单线程 `malloc --ret`：attach / events / detach 全部成功，`retval` 为有效堆地址
-- 多线程 `getpid --ret`：多个不同 `tid` 的 entry/return 事件成对出现
-- 多线程 `malloc --ret`：多个不同 `tid` 的 entry/return 事件成对出现
-- 所有验证完成后 `list` 为空，说明本地 probe 状态能正确清理
-
 ### 5.1.1 return probe 当前实现
 
 带 `--ret` 时，entry stub 会额外执行：
@@ -236,6 +219,59 @@ target_malloc_loop -> attach(malloc --ret) -> events -> detach
 
 这部分目前已经通过 stub builder 单元测试验证“代码生成路径”可用，并通过单线程/多线程验证确认远程 runtime 分配、stub 写入、event 读取和 detach 链路可达。
 
+### 5.1.2 已验证的最小闭环
+
+目前已经通过 `sudo` 版最小闭环验证：
+
+```text
+target_getpid_loop -> attach(getpid --ret) -> events -> detach
+target_malloc_loop -> attach(malloc --ret) -> events -> detach
+```
+
+当前已经确认：
+
+- 单线程 `getpid --ret`：attach / events / detach 全部成功，`retval == target_pid`
+- 单线程 `malloc --ret`：attach / events / detach 全部成功，`retval` 为有效堆地址
+- 多线程 `getpid --ret`：多个不同 `tid` 的 entry/return 事件成对出现
+- 多线程 `malloc --ret`：多个不同 `tid` 的 entry/return 事件成对出现
+- 所有验证完成后 `list` 为空，说明本地 probe 状态能正确清理
+
+### 5.1.3 最小 demo 命令链
+
+推荐先构建主程序和验证目标：
+
+```bash
+make clean
+make
+make targets
+```
+
+手动演示 `getpid --ret`：
+
+```bash
+./build/tests/target_getpid_loop &
+target_pid=$!
+
+sudo ./build/lightprobe attach --pid "$target_pid" --lib libc.so.6 --func getpid --ret
+sudo ./build/lightprobe events --pid "$target_pid" --func getpid --limit 8
+sudo ./build/lightprobe detach --pid "$target_pid" --func getpid
+./build/lightprobe list
+
+kill "$target_pid"
+```
+
+实际输出会包含三类关键证据：
+
+```text
+attached probe_id=0 pid=<pid> libc.so.6:getpid target=0x... ret=1
+type=entry  ... tid=<tid> args=[...]
+type=return ... tid=<tid> retval=0x<pid> duration=<ns>
+detached pid=<pid> func=getpid
+ID  PID      ENABLED  RET  TARGET              LIB:FUNC
+```
+
+其中 `retval=0x<pid>` 对应目标进程 PID，说明 return probe 捕获到 `getpid()` 的真实返回值；最后 `list` 只剩表头，说明本地 probe 状态已经清理。
+
 当前已经补充四个端到端验证脚本：
 
 - `tests/scripts/run_getpid_probe_smoke.sh`
@@ -246,10 +282,17 @@ target_malloc_loop -> attach(malloc --ret) -> events -> detach
 示例：
 
 ```bash
-./tests/scripts/run_getpid_probe_smoke.sh sbc
-./tests/scripts/run_malloc_probe_smoke.sh sbc
-./tests/scripts/run_multithread_getpid_probe_smoke.sh sbc
-./tests/scripts/run_multithread_malloc_probe_smoke.sh sbc
+./tests/scripts/run_getpid_probe_smoke.sh
+./tests/scripts/run_malloc_probe_smoke.sh
+./tests/scripts/run_multithread_getpid_probe_smoke.sh
+./tests/scripts/run_multithread_malloc_probe_smoke.sh
+```
+
+如果需要非交互传入 sudo 密码，可以使用环境变量或第一个参数：
+
+```bash
+LIGHTPROBE_SUDO_PASSWORD='<password>' ./tests/scripts/run_getpid_probe_smoke.sh
+./tests/scripts/run_getpid_probe_smoke.sh '<password>'
 ```
 
 脚本会自动完成：
@@ -373,8 +416,8 @@ timestamp_ns,pid,tid,probe_id,event_type,arg1,arg2,arg3,arg4,arg5,arg6,retval,du
 
 当前限制：
 
-- 当前只写 entry event。
-- return event 已在 ret_stub 中生成；attach 链路已打通，下一步需要从 event buffer 验证 retval/duration。
+- entry event 和 return event 都已经可以从 event buffer 读取。
+- `--csv` 输出适合后续 benchmark 脚本做批量统计；当前仓库只提供 smoke 级闭环验证，尚未固化完整压测报表。
 
 ### 5.6 list：查看本地 probe 表
 
@@ -495,29 +538,61 @@ struct lp_event_buffer {
 
 entry stub 使用 `lock xadd` 更新 `write_index`，从而支持多线程同时写事件。
 
-## 8. 当前已知限制
+## 8. benchmark 与展示材料
 
-- `remote_mmap()` 已接入并完成 attach 冒烟验证；后续风险主要在事件内容验证、detach 清理和多线程压力测试。
-- `remote_munmap()` 尚未完成，detach 当前只会 best-effort 调用。
-- return probe 已完成控制流和 return event 生成，等待完整 attach 后实测验证。
-- 远程 runtime 暂未 unmap。
+当前项目已经具备可展示的最小 benchmark 输入和事件输出能力：
+
+- 验证目标：`getpid`、`malloc`。
+- 线程模型：单线程、多线程。
+- 事件类型：entry event、return event。
+- 输出格式：普通文本和 CSV。
+- 关键字段：`timestamp_ns`、`pid`、`tid`、`probe_id`、参数、`retval`、`duration_ns`。
+
+推荐展示流程：
+
+```bash
+make clean
+make
+make targets
+make test
+
+./tests/scripts/run_getpid_probe_smoke.sh
+./tests/scripts/run_malloc_probe_smoke.sh
+./tests/scripts/run_multithread_getpid_probe_smoke.sh
+./tests/scripts/run_multithread_malloc_probe_smoke.sh
+```
+
+简单性能说明：
+
+- 事件写入使用目标进程内 ring buffer，entry/return stub 通过 `lock xadd` 获取写入 slot。
+- ring buffer 固定容量为 4096 条事件，超过容量后按 `write_index % capacity` 覆盖旧事件。
+- `events --csv` 可以作为后续 benchmark 输入，用于统计事件数量、线程分布和 return probe duration。
+- 当前实现优先保证功能正确性。`gettid` 与 `clock_gettime` 仍通过 syscall 获取，后续可以改为 vDSO 或缓存策略降低开销。
+
+## 9. 当前已知限制与边界
+
+- 当前支持范围是 Linux/x86_64 用户态动态库函数。
+- hook 安装、远程内存读写和远程 syscall 依赖 `ptrace`，调试非子进程通常需要 `sudo` 或合适的 ptrace 权限。
+- return probe 已支持多线程基础场景，但它不是完整工业级 unwinder。
+- shadow stack 使用固定线程槽和固定嵌套深度，极高并发、极深递归需要继续扩展。
+- 当前对信号中断、异步取消、异常控制流等复杂场景只做基础 fallback，不作为第一版能力承诺。
 - x86_64 指令长度解析是第一版，覆盖常见函数入口，复杂 VEX/EVEX 指令暂未支持。
-- 当前只支持 x86_64。
+- 当前远程 runtime 采用 RWX 映射，后续可以拆分为 RW 数据区和 RX 代码区。
 
-## 9. 后续计划
+## 10. 后续功能扩展方向
 
 优先级从高到低：
 
 ```text
-1. 用持续调用 `getpid`/`malloc` 的测试程序验证 entry/return event。
-2. 完成 return probe。
-3. 补 timestamp_ns 和 tid。
-4. 完善 detach 清理远程 runtime。
-5. 增加测试目标程序和 benchmark。
-6. 完善多线程压力测试。
+1. 固化 benchmark：用 events --csv 输出批量统计事件数量、线程分布和 duration。
+2. 扩展验证函数：补 strlen/write/free 等更贴近业务场景的动态库函数。
+3. 加强压力测试：递归、更多线程、更高调用频率、长时间运行。
+4. 优化性能：减少 syscall 次数，优化 shadow stack 线程槽查找，降低 stub 热路径开销。
+5. 加强健壮性：处理信号中断、线程退出、异常返回路径和更复杂指令入口。
+6. 改进安全边界：远程 runtime 拆分 RW/RX 映射，减少 RWX 页面。
 ```
 
-## 10. 相关文档
+## 11. 相关文档
 
 - `docs/member_a_runtime_layout.md`
 - `docs/member_b_task.md`
