@@ -1,0 +1,57 @@
+digraph lightprobe_demo_flow {
+    graph [
+        rankdir=LR,
+        bgcolor="white",
+        pad="0.35",
+        nodesep="0.55",
+        ranksep="0.7",
+        splines=ortho,
+        fontname="Arial"
+    ];
+
+    node [
+        shape=box,
+        style="rounded,filled",
+        color="#1d4ed8",
+        fillcolor="#dbeafe",
+        fontname="Arial",
+        fontsize=12,
+        penwidth=1.4,
+        margin="0.12,0.08"
+    ];
+
+    edge [
+        color="#374151",
+        fontname="Arial",
+        fontsize=10,
+        arrowsize=0.8,
+        penwidth=1.2
+    ];
+
+    cli [label="lightprobe CLI"];
+    attach [label="attach --ret"];
+    controller [label="controller\nptrace stop all threads\nresolve symbol\nremote mmap", fillcolor="#dcfce7", color="#15803d"];
+    runtime [label="remote runtime\nconfig + event buffer\nshadow stack + stubs", fillcolor="#dcfce7", color="#15803d"];
+    patch [label="patch target entry\njmp entry_stub", fillcolor="#dcfce7", color="#15803d"];
+    target [label="target process\nlibc function call", fillcolor="#dcfce7", color="#15803d"];
+    entry [label="entry event\nargs + pid/tid + timestamp", fillcolor="#fef3c7", color="#d97706"];
+    ret [label="return event\nretval + duration_ns", fillcolor="#fef3c7", color="#d97706"];
+    buffer [label="ring buffer\nlock xadd slot", fillcolor="#fef3c7", color="#d97706"];
+    events [label="events --csv"];
+    detach [label="detach"];
+    restore [label="restore original code\nremote munmap\nclear local state", fillcolor="#f3f4f6", color="#4b5563"];
+
+    cli -> attach;
+    attach -> controller;
+    controller -> runtime;
+    runtime -> patch;
+    patch -> target;
+    target -> entry;
+    target -> ret;
+    entry -> buffer;
+    ret -> buffer;
+    buffer -> events;
+    cli -> events;
+    cli -> detach;
+    detach -> restore;
+}

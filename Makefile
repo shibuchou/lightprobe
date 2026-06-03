@@ -62,7 +62,10 @@ TARGET_BINS := \
 	$(BUILD_DIR)/tests/target_getpid_loop \
 	$(BUILD_DIR)/tests/target_malloc_loop \
 	$(BUILD_DIR)/tests/target_multithread_getpid \
-	$(BUILD_DIR)/tests/target_multithread_malloc
+	$(BUILD_DIR)/tests/target_multithread_malloc \
+	$(BUILD_DIR)/tests/target_strlen_loop \
+	$(BUILD_DIR)/tests/target_write_loop \
+	$(BUILD_DIR)/tests/target_probe_stress
 
 test: $(UNIT_TESTS)
 	@for test in $(UNIT_TESTS); do \
@@ -94,3 +97,15 @@ $(BUILD_DIR)/tests/target_multithread_getpid: tests/targets/target_multithread_g
 $(BUILD_DIR)/tests/target_multithread_malloc: tests/targets/target_multithread_malloc.c
 	@mkdir -p $(dir $@)
 	$(CC) $(CFLAGS) -pthread -o $@ tests/targets/target_multithread_malloc.c
+
+$(BUILD_DIR)/tests/target_strlen_loop: tests/targets/target_strlen_loop.c
+	@mkdir -p $(dir $@)
+	$(CC) $(CFLAGS) -o $@ tests/targets/target_strlen_loop.c
+
+$(BUILD_DIR)/tests/target_write_loop: tests/targets/target_write_loop.c
+	@mkdir -p $(dir $@)
+	$(CC) $(CFLAGS) -o $@ tests/targets/target_write_loop.c
+
+$(BUILD_DIR)/tests/target_probe_stress: tests/targets/target_probe_stress.c
+	@mkdir -p $(dir $@)
+	$(CC) $(CFLAGS) -pthread -o $@ tests/targets/target_probe_stress.c

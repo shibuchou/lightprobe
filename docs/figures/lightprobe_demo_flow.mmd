@@ -1,0 +1,37 @@
+---
+config:
+  theme: base
+  themeVariables:
+    primaryColor: "#dbeafe"
+    primaryBorderColor: "#1d4ed8"
+    primaryTextColor: "#111827"
+    secondaryColor: "#dcfce7"
+    secondaryBorderColor: "#15803d"
+    tertiaryColor: "#fef3c7"
+    tertiaryBorderColor: "#d97706"
+    lineColor: "#374151"
+---
+flowchart LR
+    CLI["lightprobe CLI"] --> Attach["attach --ret"]
+    Attach --> Controller["controller\nptrace stop all threads\nresolve symbol\nremote mmap"]
+    Controller --> Runtime["remote runtime\nconfig + event buffer\nshadow stack + stubs"]
+    Runtime --> Patch["patch target entry\njmp entry_stub"]
+    Patch --> Target["target process\nlibc function call"]
+    Target --> Entry["entry event\nargs + pid/tid + timestamp"]
+    Target --> Ret["return event\nretval + duration_ns"]
+    Entry --> Buffer["ring buffer\nlock xadd slot"]
+    Ret --> Buffer
+    CLI --> Events["events --csv"]
+    Buffer --> Events
+    CLI --> Detach["detach"]
+    Detach --> Restore["restore original code\nremote munmap\nclear local state"]
+
+    classDef cli fill:#dbeafe,stroke:#1d4ed8,color:#111827;
+    classDef runtime fill:#dcfce7,stroke:#15803d,color:#111827;
+    classDef event fill:#fef3c7,stroke:#d97706,color:#111827;
+    classDef cleanup fill:#f3f4f6,stroke:#4b5563,color:#111827;
+
+    class CLI,Attach,Events,Detach cli;
+    class Controller,Runtime,Patch,Target runtime;
+    class Entry,Ret,Buffer event;
+    class Restore cleanup;

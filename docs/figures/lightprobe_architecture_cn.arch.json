@@ -1,0 +1,211 @@
+{
+  "sections": [
+    [
+      "用户入口",
+      35,
+      80,
+      240,
+      470,
+      "#EFF6FF",
+      "#93C5FD"
+    ],
+    [
+      "宿主侧 lightprobe",
+      285,
+      80,
+      560,
+      470,
+      "#F0F9FF",
+      "#7DD3FC"
+    ],
+    [
+      "目标进程内",
+      900,
+      80,
+      350,
+      470,
+      "#F0FDF4",
+      "#86EFAC"
+    ],
+    [
+      "验证与展示",
+      1300,
+      80,
+      300,
+      470,
+      "#FFFBEB",
+      "#FCD34D"
+    ]
+  ],
+  "nodes": [
+    [
+      "user",
+      "用户\n阅读 README\n运行验证脚本",
+      70,
+      240,
+      150,
+      92,
+      "#DBEAFE",
+      "#2563EB"
+    ],
+    [
+      "cli",
+      "cli\nattach / events / detach\n统一命令入口",
+      300,
+      230,
+      190,
+      110,
+      "#E0F2FE",
+      "#0284C7"
+    ],
+    [
+      "state",
+      "本地状态\n/tmp/lightprobe_state.bin\n记录 probe 元数据",
+      300,
+      410,
+      190,
+      92,
+      "#F8FAFC",
+      "#64748B"
+    ],
+    [
+      "controller",
+      "controller\nptrace 暂停线程\n解析 maps / ELF\n远程读写 / mmap / munmap",
+      590,
+      160,
+      230,
+      145,
+      "#E0F2FE",
+      "#0284C7"
+    ],
+    [
+      "injector",
+      "injector\n计算 patch 长度\n生成 trampoline\n生成 entry / ret stub",
+      590,
+      370,
+      230,
+      145,
+      "#E0F2FE",
+      "#0284C7"
+    ],
+    [
+      "target",
+      "目标进程\nlibc 函数入口被 patch\ngetpid / malloc / strlen / write",
+      930,
+      150,
+      250,
+      130,
+      "#DCFCE7",
+      "#16A34A"
+    ],
+    [
+      "runtime",
+      "remote runtime\nconfig：开关与地址配置\nevent buffer：4096 条 ring buffer\nshadow stack：按 tid 保存返回地址\nentry / ret stub：采集参数、返回值和耗时",
+      930,
+      350,
+      290,
+      175,
+      "#DCFCE7",
+      "#16A34A"
+    ],
+    [
+      "events",
+      "events 输出\n普通文本 / CSV\nentry 与 return 成对事件",
+      1330,
+      210,
+      230,
+      110,
+      "#FEF3C7",
+      "#D97706"
+    ],
+    [
+      "benchmark",
+      "benchmark / docs\n事件数、线程数\nduration 摘要\nREADME 与比赛展示图",
+      1330,
+      400,
+      230,
+      130,
+      "#FEF3C7",
+      "#D97706"
+    ]
+  ],
+  "edges": [
+    [
+      "user",
+      "cli",
+      "运行命令",
+      "#2563EB",
+      false
+    ],
+    [
+      "cli",
+      "controller",
+      "① attach：控制目标进程",
+      "#2563EB",
+      false
+    ],
+    [
+      "controller",
+      "injector",
+      "② 提供目标地址和远程内存能力",
+      "#2563EB",
+      false
+    ],
+    [
+      "injector",
+      "target",
+      "③ patch 函数入口",
+      "#2563EB",
+      false
+    ],
+    [
+      "injector",
+      "runtime",
+      "④ 写入 runtime 与 stub",
+      "#2563EB",
+      false
+    ],
+    [
+      "target",
+      "runtime",
+      "⑤ 函数调用进入 stub",
+      "#16A34A",
+      false
+    ],
+    [
+      "runtime",
+      "target",
+      "⑥ 执行原函数并返回",
+      "#16A34A",
+      true
+    ],
+    [
+      "runtime",
+      "events",
+      "⑦ 写入并读取 event buffer",
+      "#D97706",
+      false
+    ],
+    [
+      "events",
+      "benchmark",
+      "⑧ CSV 汇总展示",
+      "#D97706",
+      false
+    ],
+    [
+      "cli",
+      "state",
+      "保存 / 查询状态",
+      "#64748B",
+      false
+    ],
+    [
+      "controller",
+      "target",
+      "detach：恢复入口指令",
+      "#64748B",
+      true
+    ]
+  ]
+}

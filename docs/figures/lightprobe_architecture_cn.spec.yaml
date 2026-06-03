@@ -1,0 +1,79 @@
+meta:
+  profile: engineering-review
+  theme: tech-blue
+  source: generated
+  layout: horizontal
+  routing: orthogonal
+  canvas: 1640x620
+  title: "lightprobe 用户态动态探针中文框架图"
+  description: "面向比赛评审的中文框架图。图中只保留核心模块和 attach/events/detach 主链路，模块名保留英文。"
+
+sections:
+  - 用户入口
+  - 宿主侧 lightprobe
+  - 目标进程内
+  - 验证与展示
+
+flow:
+  - 用户通过 README 或脚本调用 cli。
+  - cli 进入 controller，完成 ptrace、线程暂停、符号解析和远程内存操作。
+  - controller 为 injector 提供目标地址和远程内存能力。
+  - injector patch 目标函数入口，并写入 remote runtime。
+  - 目标函数调用进入 entry/ret stub，事件写入 event buffer。
+  - events 读取 event buffer，CSV 输出进入 benchmark 和 docs。
+  - detach 恢复入口指令并清理远程 runtime。
+
+nodes:
+  - id: user
+    label: "用户\n阅读 README\n运行验证脚本"
+  - id: cli
+    label: "cli\nattach / events / detach\n统一命令入口"
+  - id: state
+    label: "本地状态\n/tmp/lightprobe_state.bin\n记录 probe 元数据"
+  - id: controller
+    label: "controller\nptrace 暂停线程\n解析 maps / ELF\n远程读写 / mmap / munmap"
+  - id: injector
+    label: "injector\n计算 patch 长度\n生成 trampoline\n生成 entry / ret stub"
+  - id: target
+    label: "目标进程\nlibc 函数入口被 patch\ngetpid / malloc / strlen / write"
+  - id: runtime
+    label: "remote runtime\nconfig：开关与地址配置\nevent buffer：4096 条 ring buffer\nshadow stack：按 tid 保存返回地址\nentry / ret stub：采集参数、返回值和耗时"
+  - id: events
+    label: "events 输出\n普通文本 / CSV\nentry 与 return 成对事件"
+  - id: benchmark
+    label: "benchmark / docs\n事件数、线程数\nduration 摘要\nREADME 与比赛展示图"
+
+edges:
+  - from: user
+    to: cli
+    label: "运行命令"
+  - from: cli
+    to: controller
+    label: "① attach：控制目标进程"
+  - from: controller
+    to: injector
+    label: "② 提供目标地址和远程内存能力"
+  - from: injector
+    to: target
+    label: "③ patch 函数入口"
+  - from: injector
+    to: runtime
+    label: "④ 写入 runtime 与 stub"
+  - from: target
+    to: runtime
+    label: "⑤ 函数调用进入 stub"
+  - from: runtime
+    to: target
+    label: "⑥ 执行原函数并返回"
+  - from: runtime
+    to: events
+    label: "⑦ 写入并读取 event buffer"
+  - from: events
+    to: benchmark
+    label: "⑧ CSV 汇总展示"
+  - from: cli
+    to: state
+    label: "保存 / 查询状态"
+  - from: controller
+    to: target
+    label: "detach：恢复入口指令"

@@ -17,6 +17,8 @@ static int parse_attach_args(int argc, char **argv, struct lp_probe_spec *spec)
             spec->lib_name = argv[++i];
         } else if (strcmp(argv[i], "--func") == 0 && i + 1 < argc) {
             spec->func_name = argv[++i];
+        } else if (strcmp(argv[i], "--addr") == 0 && i + 1 < argc) {
+            spec->target_addr_override = strtoull(argv[++i], NULL, 0);
         } else if (strcmp(argv[i], "--ret") == 0) {
             spec->has_retprobe = 1;
         } else {
@@ -25,6 +27,9 @@ static int parse_attach_args(int argc, char **argv, struct lp_probe_spec *spec)
     }
 
     if (spec->pid <= 0 || spec->lib_name == NULL || spec->func_name == NULL) {
+        return -1;
+    }
+    if (spec->target_addr_override != 0 && spec->target_addr_override < 0x1000) {
         return -1;
     }
     return 0;
@@ -50,4 +55,3 @@ int lp_cmd_attach(int argc, char **argv)
            desc.target_addr, desc.has_retprobe);
     return 0;
 }
-

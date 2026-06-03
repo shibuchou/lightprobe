@@ -42,6 +42,7 @@ struct lp_probe_spec {
     pid_t pid;
     const char *lib_name;
     const char *func_name;
+    uint64_t target_addr_override;
     int has_retprobe;
 };
 

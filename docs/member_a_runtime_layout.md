@@ -163,6 +163,9 @@ build/tests/target_getpid_loop
 build/tests/target_malloc_loop
 build/tests/target_multithread_getpid
 build/tests/target_multithread_malloc
+build/tests/target_strlen_loop
+build/tests/target_write_loop
+build/tests/target_probe_stress
 ```
 
 ### 6.3 闭环验证脚本
@@ -174,6 +177,10 @@ tests/scripts/run_getpid_probe_smoke.sh
 tests/scripts/run_malloc_probe_smoke.sh
 tests/scripts/run_multithread_getpid_probe_smoke.sh
 tests/scripts/run_multithread_malloc_probe_smoke.sh
+tests/scripts/run_strlen_probe_smoke.sh
+tests/scripts/run_write_probe_smoke.sh
+tests/scripts/run_probe_stress.sh
+tests/scripts/run_benchmark_summary.sh
 ```
 
 推荐验证顺序：
@@ -183,6 +190,9 @@ tests/scripts/run_multithread_malloc_probe_smoke.sh
 2. 单线程 malloc --ret
 3. 多线程 getpid --ret
 4. 多线程 malloc --ret
+5. 单线程 strlen --ret
+6. 单线程 write --ret
+7. stress benchmark
 ```
 
 ### 6.4 已确认通过的验证
@@ -205,6 +215,16 @@ tests/scripts/run_multithread_malloc_probe_smoke.sh
 - 多线程 `malloc --ret`
   - 多个不同 `tid` 的 entry/return 事件成对出现
   - detach 成功
+- 单线程 `strlen --ret`
+  - 通过 `--addr` 命中 glibc IFUNC 的实际实现地址
+  - return event 返回字符串长度
+  - detach 成功
+- 单线程 `write --ret`
+  - 捕获 fd/buf/count 参数
+  - return event 返回写入字节数
+  - detach 成功
+- stress benchmark
+  - `strlen` 和 `malloc` 都能输出事件数、线程数和 return duration 摘要
 
 所有闭环验证完成后，`./build/lightprobe list` 为空，说明本地 probe 状态能正确清理。
 
@@ -214,7 +234,11 @@ tests/scripts/run_multithread_malloc_probe_smoke.sh
 
 - 单线程目标：`target_getpid_loop`、`target_malloc_loop`。
 - 多线程目标：`target_multithread_getpid`、`target_multithread_malloc`。
+- 扩展函数目标：`target_strlen_loop`、`target_write_loop`。
+- 压力测试目标：`target_probe_stress`。
 - 闭环脚本：`tests/scripts/run_*_probe_smoke.sh`。
+- benchmark 汇总脚本：`tests/scripts/run_benchmark_summary.sh`。
+- 展示图示：`docs/figures/lightprobe_demo_flow.mmd` 与 `docs/figures/lightprobe_demo_flow.svg`。
 - 输出来源：`lightprobe events` 普通文本或 `--csv`。
 
 展示时建议使用以下证据链：
@@ -232,7 +256,7 @@ list 清理：只剩表头，说明本地状态已清理
 - event buffer 是固定容量 ring buffer，当前容量为 4096 条事件。
 - entry/return stub 使用 `lock xadd` 分配 slot，多线程下避免多个线程覆盖同一条新事件。
 - return probe 通过 shadow stack 维护每个线程的原始返回地址和 entry timestamp。
-- 当前 benchmark 以功能闭环和事件正确性为主，尚未做完整吞吐量、延迟分位数和长时间压力测试。
+- 当前 benchmark 已能输出事件总数、entry/return 数量、tid 数量和 return duration 的基础统计；完整吞吐量、延迟分位数和长时间压力测试仍属于后续增强。
 
 ## 8. 当前实现边界
 
@@ -251,8 +275,8 @@ list 清理：只剩表头，说明本地状态已清理
 
 当前建议优先级：
 
-1. 固化 benchmark：用 `events --csv` 生成批量统计，统计事件数、线程分布、return duration。
-2. 扩展验证函数：增加 `strlen`、`write`、`free` 等常见动态库函数。
+1. 扩展 benchmark：增加更长时间运行和多组线程/调用频率参数对比。
+2. 扩展验证函数：增加 `free`、`memcpy` 等常见动态库函数。
 3. 加强压力测试：更多线程、更高调用频率、递归和长时间运行。
 4. 优化性能：减少 syscall 次数，优化 shadow stack 线程槽查找，降低 stub 热路径开销。
 5. 加强健壮性：处理信号中断、线程退出、异常返回路径和更复杂函数入口。

@@ -249,10 +249,14 @@ int lp_probe_attach(const struct lp_probe_spec *spec, struct probe_desc *out_des
         return -1;
     }
 
-    if (lp_resolve_symbol(spec->pid, spec->lib_name, spec->func_name,
-                          &desc->target_addr) < 0) {
-        lp_probe_manager_remove(desc);
-        return -1;
+    if (spec->target_addr_override != 0) {
+        desc->target_addr = spec->target_addr_override;
+    } else {
+        if (lp_resolve_symbol(spec->pid, spec->lib_name, spec->func_name,
+                              &desc->target_addr) < 0) {
+            lp_probe_manager_remove(desc);
+            return -1;
+        }
     }
 
     if (lp_stop_all_threads(spec->pid) < 0) {
