@@ -82,9 +82,14 @@ static int find_gadget_offset(
     }
 
 
-    for (i = 0;
-         i <= (size_t)st.st_size - pattern_len;
-         i++) {
+    if ((uint64_t)st.st_size < pattern_len) {
+        free(buf);
+        close(fd);
+        errno = ENOENT;
+        return -1;
+    }
+
+    for (i = 0; i <= (size_t)st.st_size - pattern_len; i++) {
 
         if (memcmp(buf + i,
                    pattern,

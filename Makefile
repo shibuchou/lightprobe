@@ -11,9 +11,11 @@ BIN := $(BUILD_DIR)/lightprobe
 OBJS := \
 	$(BUILD_DIR)/controller/controller_stub.o \
 	$(BUILD_DIR)/controller/elf_resolver.o \
+	$(BUILD_DIR)/controller/gadget_finder.o \
 	$(BUILD_DIR)/controller/maps_parser.o \
 	$(BUILD_DIR)/controller/process_attach.o \
 	$(BUILD_DIR)/controller/remote_mem_ptrace.o \
+	$(BUILD_DIR)/controller/remote_syscall.o \
 	$(BUILD_DIR)/controller/thread_control.o \
 	$(BUILD_DIR)/runtime/event_buffer.o \
 	$(BUILD_DIR)/runtime/remote_layout.o \
@@ -56,10 +58,18 @@ UNIT_TESTS := \
 	$(BUILD_DIR)/tests/test_instruction_len \
 	$(BUILD_DIR)/tests/test_stub_builder
 
+TARGET_BINS := \
+	$(BUILD_DIR)/tests/target_getpid_loop \
+	$(BUILD_DIR)/tests/target_malloc_loop \
+	$(BUILD_DIR)/tests/target_multithread_getpid \
+	$(BUILD_DIR)/tests/target_multithread_malloc
+
 test: $(UNIT_TESTS)
 	@for test in $(UNIT_TESTS); do \
 		$$test || exit $$?; \
 	done
+
+targets: $(TARGET_BINS)
 
 $(BUILD_DIR)/tests/test_instruction_len: tests/unit/test_instruction_len.c injector/instruction_x86_64.c include/injector.h include/probe_types.h
 	@mkdir -p $(dir $@)
@@ -68,3 +78,19 @@ $(BUILD_DIR)/tests/test_instruction_len: tests/unit/test_instruction_len.c injec
 $(BUILD_DIR)/tests/test_stub_builder: tests/unit/test_stub_builder.c injector/trampoline_x86_64.c runtime/remote_layout.c include/injector.h include/runtime.h include/probe_types.h include/event.h include/arch_x86_64.h
 	@mkdir -p $(dir $@)
 	$(CC) $(CFLAGS) -o $@ tests/unit/test_stub_builder.c injector/trampoline_x86_64.c runtime/remote_layout.c
+
+$(BUILD_DIR)/tests/target_getpid_loop: tests/targets/target_getpid_loop.c
+	@mkdir -p $(dir $@)
+	$(CC) $(CFLAGS) -o $@ tests/targets/target_getpid_loop.c
+
+$(BUILD_DIR)/tests/target_malloc_loop: tests/targets/target_malloc_loop.c
+	@mkdir -p $(dir $@)
+	$(CC) $(CFLAGS) -o $@ tests/targets/target_malloc_loop.c
+
+$(BUILD_DIR)/tests/target_multithread_getpid: tests/targets/target_multithread_getpid.c
+	@mkdir -p $(dir $@)
+	$(CC) $(CFLAGS) -pthread -o $@ tests/targets/target_multithread_getpid.c
+
+$(BUILD_DIR)/tests/target_multithread_malloc: tests/targets/target_multithread_malloc.c
+	@mkdir -p $(dir $@)
+	$(CC) $(CFLAGS) -pthread -o $@ tests/targets/target_multithread_malloc.c

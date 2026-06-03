@@ -148,3 +148,16 @@ int lp_remote_mmap(
         remote_addr
     );
 }
+
+
+int lp_remote_munmap(
+    pid_t pid,
+    uint64_t remote_addr,
+    size_t size)
+{
+    return remote_munmap(
+        pid,
+        remote_addr,
+        size
+    );
+}

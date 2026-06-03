@@ -1,8 +1,11 @@
+#define _GNU_SOURCE
+
 // remote_mem.c
 
 #include "controller_internal.h"
 
 #include <sys/ptrace.h>
+#include <sys/uio.h>
 #include <sys/user.h>
 #include <sys/syscall.h>
 #include <sys/wait.h>
@@ -44,6 +47,25 @@ int remote_read(
         errno = EINVAL;
 
         return -1;
+    }
+
+    {
+        struct iovec local = {
+            .iov_base = buf,
+            .iov_len = len,
+        };
+        struct iovec remote = {
+            .iov_base = (void *)remote_addr,
+            .iov_len = len,
+        };
+        ssize_t nread = process_vm_readv(pid, &local, 1, &remote, 1, 0);
+        if (nread == (ssize_t)len) {
+            return 0;
+        }
+        if (nread >= 0) {
+            errno = EIO;
+            return -1;
+        }
     }
 
     /*
@@ -123,6 +145,25 @@ int remote_write(
         return -1;
     }
 
+    {
+        struct iovec local = {
+            .iov_base = (void *)buf,
+            .iov_len = len,
+        };
+        struct iovec remote = {
+            .iov_base = (void *)remote_addr,
+            .iov_len = len,
+        };
+        ssize_t nwritten = process_vm_writev(pid, &local, 1, &remote, 1, 0);
+        if (nwritten == (ssize_t)len) {
+            return 0;
+        }
+        if (nwritten >= 0) {
+            errno = EIO;
+            return -1;
+        }
+    }
+
     /*
      * 按 word 写入
      */
@@ -192,7 +233,69 @@ int remote_write(
 
 
 
-int remote_mmap(pid_t pid,size_t size,int prot,uint64_t *remote_addr){
-    return remote_syscall(pid,__NR_mmap,0,size,prot,MAP_PRIVATE |
-    MAP_ANONYMOUS,(uint64_t)-1,0,remote_addr);
+int remote_mmap(
+    pid_t pid,
+    size_t size,
+    int prot,
+    uint64_t *remote_addr)
+{
+    uint64_t retval = 0;
+
+    if (pid <= 0 || size == 0 || remote_addr == NULL) {
+        errno = EINVAL;
+        return -1;
+    }
+
+    if (remote_syscall(pid,
+                       __NR_mmap,
+                       0,
+                       size,
+                       (uint64_t)prot,
+                       MAP_PRIVATE | MAP_ANONYMOUS,
+                       (uint64_t)-1,
+                       0,
+                       &retval) < 0) {
+        return -1;
+    }
+
+    if ((int64_t)retval < 0 && (int64_t)retval >= -4095) {
+        errno = (int)-(int64_t)retval;
+        return -1;
+    }
+
+    *remote_addr = retval;
+    return 0;
+}
+
+int remote_munmap(
+    pid_t pid,
+    uint64_t remote_addr,
+    size_t size)
+{
+    uint64_t retval = 0;
+
+    if (pid <= 0 || remote_addr == 0 || size == 0) {
+        errno = EINVAL;
+        return -1;
+    }
+
+    if (remote_syscall(
+            pid,
+            __NR_munmap,
+            remote_addr,
+            size,
+            0,
+            0,
+            0,
+            0,
+            &retval) < 0) {
+        return -1;
+    }
+
+    if ((int64_t)retval < 0 && (int64_t)retval >= -4095) {
+        errno = (int)-(int64_t)retval;
+        return -1;
+    }
+
+    return 0;
 }

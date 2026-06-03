@@ -24,19 +24,19 @@
 x86_64 + 动态库函数 + entry probe + return probe + event buffer + CLI 管理
 ```
 
-`remote_mmap()` 仍由成员 B 继续实现，因此真实 attach 链路目前会在远程 runtime 分配阶段返回 `ENOSYS`。
+`remote_mmap()` 已由成员 B 接入，并已按本项目接口完成构建集成。当前主线已经完成单线程/多线程的 `attach -> events -> detach` 基础闭环验证，后续重点转向 benchmark、展示材料和文档收口。
 
 ## 2. 当前功能状态
 
 | 赛题要求 | 状态 | 说明 |
 | --- | --- | --- |
-| F1 动态库函数探针插入 | 进行中 | 已有符号解析、入口 patch、trampoline、entry stub 代码生成；等待 `remote_mmap()` 完成后联调 |
+| F1 动态库函数探针插入 | 进行中 | 已有符号解析、远程 mmap、入口 patch、trampoline、entry stub 代码生成；`getpid/malloc` 的单线程和多线程验证已跑通 |
 | F2 函数参数获取 | 进行中 | entry stub 已采集 x86_64 System V ABI 前 6 个参数、tid、CLOCK_MONOTONIC 时间戳 |
-| F3 函数返回值捕获 | 进行中 | entry 侧已替换返回地址并压入 shadow stack；ret_stub 已写 return event、retval 和 duration；等待完整 attach 后实测 |
-| F4 探针清理 | 进行中 | 已保存原始指令并支持入口恢复；已预留 best-effort 远程 runtime munmap 接口 |
+| F3 函数返回值捕获 | 进行中 | entry 侧已替换返回地址并压入 shadow stack；ret_stub 已写 return event、retval 和 duration；`getpid/malloc` 返回值已完成实际验证 |
+| F4 探针清理 | 进行中 | 已保存原始指令并支持入口恢复；`lp_remote_munmap()` 已接入远程 syscall；单线程/多线程 detach 已完成实测 |
 | F5 探针动态开关 | 进行中 | CLI 会更新本地状态和远程 `config->enabled` |
 | F6 多探针共存 | 进行中 | 本地 probe table 支持 16 个 probe |
-| F7 多线程安全 | 进行中 | controller 已有 stop/resume all threads；event buffer 使用 `lock xadd` 分配 slot；shadow stack 空线程槽使用 `lock cmpxchg` 原子抢占 |
+| F7 多线程安全 | 进行中 | controller 已有 stop/resume all threads；event buffer 使用 `lock xadd` 分配 slot；shadow stack 空线程槽使用 `lock cmpxchg` 原子抢占；`getpid/malloc --ret` 多线程验证已通过 |
 
 ## 3. 目录结构
 
@@ -113,6 +113,21 @@ instruction length tests passed
 stub builder tests passed
 ```
 
+### 4.4 端到端验证目标
+
+```bash
+make targets
+```
+
+当前会生成四个最小验证目标：
+
+- `build/tests/target_getpid_loop`
+- `build/tests/target_malloc_loop`
+- `build/tests/target_multithread_getpid`
+- `build/tests/target_multithread_malloc`
+
+这些目标会持续调用对应函数，便于观察 entry/return 事件；其中多线程目标用于验证 shadow stack、return probe 和 event buffer 在多线程下的基本可用性。
+
 ## 5. CLI 使用说明
 
 查看帮助：
@@ -150,7 +165,7 @@ sudo ./build/lightprobe attach --pid 1234 --lib libc.so.6 --func malloc --ret
 - `--pid <pid>`：目标进程 PID。
 - `--lib <lib_name>`：动态库名，例如 `libc.so.6`。
 - `--func <func_name>`：函数名，例如 `getpid`、`malloc`。
-- `--ret`：请求安装 return probe。当前 A 侧已经生成 entry/ret stub，并维护 shadow stack；真实运行仍等待成员 B 的 `remote_mmap()` 接入后联调。
+- `--ret`：请求安装 return probe。当前 A 侧已经生成 entry/ret stub，并维护 shadow stack；attach 链路已能完成远程 runtime 分配和入口 patch。
 
 当前 attach 内部流程：
 
@@ -166,13 +181,36 @@ sudo ./build/lightprobe attach --pid 1234 --lib libc.so.6 --func malloc --ret
 9. 保存 probe 元数据到本地状态文件。
 ```
 
-注意：当前 `remote_mmap()` 尚未完成，因此 attach 会在第 5 步失败并返回：
+当前状态：`remote_mmap()` 已接入，attach 不再停在远程 runtime 分配阶段。已经完成一次如下冒烟验证：
 
-```text
-Function not implemented
+```bash
+./build/lightprobe attach --pid <child-pid> --lib libc.so.6 --func getpid --ret
 ```
 
-这是当前阶段的预期行为。
+输出示例：
+
+```text
+attached probe_id=0 pid=<pid> libc.so.6:getpid target=0x... ret=1
+```
+
+注意：在默认 `kernel.yama.ptrace_scope=1` 的系统上，普通用户只能 ptrace 自己的子进程；调试非子进程通常需要 `sudo`。
+
+### 5.1.2 已验证的最小闭环
+
+目前已经通过 `sudo` 版最小闭环验证：
+
+```text
+target_getpid_loop -> attach(getpid --ret) -> events -> detach
+target_malloc_loop -> attach(malloc --ret) -> events -> detach
+```
+
+当前已经确认：
+
+- 单线程 `getpid --ret`：attach / events / detach 全部成功，`retval == target_pid`
+- 单线程 `malloc --ret`：attach / events / detach 全部成功，`retval` 为有效堆地址
+- 多线程 `getpid --ret`：多个不同 `tid` 的 entry/return 事件成对出现
+- 多线程 `malloc --ret`：多个不同 `tid` 的 entry/return 事件成对出现
+- 所有验证完成后 `list` 为空，说明本地 probe 状态能正确清理
 
 ### 5.1.1 return probe 当前实现
 
@@ -196,7 +234,42 @@ Function not implemented
 5. 恢复 rax 并跳回原始返回地址。
 ```
 
-这部分目前已经通过 stub builder 单元测试验证“代码生成路径”可用，但还没有经过真实目标进程执行验证。
+这部分目前已经通过 stub builder 单元测试验证“代码生成路径”可用，并通过单线程/多线程验证确认远程 runtime 分配、stub 写入、event 读取和 detach 链路可达。
+
+当前已经补充四个端到端验证脚本：
+
+- `tests/scripts/run_getpid_probe_smoke.sh`
+- `tests/scripts/run_malloc_probe_smoke.sh`
+- `tests/scripts/run_multithread_getpid_probe_smoke.sh`
+- `tests/scripts/run_multithread_malloc_probe_smoke.sh`
+
+示例：
+
+```bash
+./tests/scripts/run_getpid_probe_smoke.sh sbc
+./tests/scripts/run_malloc_probe_smoke.sh sbc
+./tests/scripts/run_multithread_getpid_probe_smoke.sh sbc
+./tests/scripts/run_multithread_malloc_probe_smoke.sh sbc
+```
+
+脚本会自动完成：
+
+```text
+启动目标进程
+sudo attach --ret
+读取最近事件
+sudo detach
+检查本地 probe 列表
+```
+
+推荐验证顺序：
+
+```text
+1. run_getpid_probe_smoke.sh
+2. run_malloc_probe_smoke.sh
+3. run_multithread_getpid_probe_smoke.sh
+4. run_multithread_malloc_probe_smoke.sh
+```
 
 ### 5.2 detach：清理探针
 
@@ -220,7 +293,7 @@ sudo ./build/lightprobe detach --pid 1234 --func getpid
 
 当前限制：
 
-- `lp_remote_munmap()` 当前为 `ENOSYS` 占位，真实释放依赖成员 B 后续实现。
+- `lp_remote_munmap()` 已接入远程 `munmap` syscall，作为 detach 阶段的 best-effort cleanup。
 
 ### 5.3 enable：启用探针
 
@@ -301,7 +374,7 @@ timestamp_ns,pid,tid,probe_id,event_type,arg1,arg2,arg3,arg4,arg5,arg6,retval,du
 当前限制：
 
 - 当前只写 entry event。
-- return event 已在 ret_stub 中生成，但等待 `remote_mmap()` 完成后实测。
+- return event 已在 ret_stub 中生成；attach 链路已打通，下一步需要从 event buffer 验证 retval/duration。
 
 ### 5.6 list：查看本地 probe 表
 
@@ -424,7 +497,7 @@ entry stub 使用 `lock xadd` 更新 `write_index`，从而支持多线程同时
 
 ## 8. 当前已知限制
 
-- `remote_mmap()` 尚未完成，真实 attach 链路还不能完整跑通。
+- `remote_mmap()` 已接入并完成 attach 冒烟验证；后续风险主要在事件内容验证、detach 清理和多线程压力测试。
 - `remote_munmap()` 尚未完成，detach 当前只会 best-effort 调用。
 - return probe 已完成控制流和 return event 生成，等待完整 attach 后实测验证。
 - 远程 runtime 暂未 unmap。
@@ -436,7 +509,7 @@ entry stub 使用 `lock xadd` 更新 `write_index`，从而支持多线程同时
 优先级从高到低：
 
 ```text
-1. 等成员 B 完成 remote_mmap 后做 getpid 最小闭环联调。
+1. 用持续调用 `getpid`/`malloc` 的测试程序验证 entry/return event。
 2. 完成 return probe。
 3. 补 timestamp_ns 和 tid。
 4. 完善 detach 清理远程 runtime。

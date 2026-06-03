@@ -492,7 +492,7 @@ int lp_x86_64_build_ret_stub(const struct probe_desc *desc,
     };
     size_t loop_start;
     size_t jz_found_imm;
-    size_t jnz_next_imm;
+    size_t jmp_next_imm;
     size_t jae_loop_fallback_imm;
     size_t jz_empty_fallback_imm;
     size_t jmp_loop_imm;
@@ -500,7 +500,6 @@ int lp_x86_64_build_ret_stub(const struct probe_desc *desc,
     size_t next_label;
     size_t fallback_label;
     int32_t rel32;
-    int8_t rel8;
 
     static const unsigned char save[] = {
         0x9C,                         /* pushfq */
@@ -544,7 +543,7 @@ int lp_x86_64_build_ret_stub(const struct probe_desc *desc,
         const unsigned char mov_ecx_slot_tid[] = {0x41, 0x8B, 0x0B};
         const unsigned char cmp_ecx_r8d[] = {0x44, 0x39, 0xC1};
         const unsigned char jz_rel32[] = {0x0F, 0x84};
-        const unsigned char jnz_rel8[] = {0x75};
+        const unsigned char jmp_rel32_b[] = {0xE9};
 
         if (emit_bytes(&w, mov_eax_gettid, sizeof(mov_eax_gettid)) < 0 ||
             emit_bytes(&w, syscall_op, sizeof(syscall_op)) < 0 ||
@@ -572,11 +571,11 @@ int lp_x86_64_build_ret_stub(const struct probe_desc *desc,
         }
         jz_found_imm = w.len;
         if (emit_u32(&w, 0) < 0 ||
-            emit_bytes(&w, jnz_rel8, sizeof(jnz_rel8)) < 0) {
+            emit_bytes(&w, jmp_rel32_b, sizeof(jmp_rel32_b)) < 0) {
             return -1;
         }
-        jnz_next_imm = w.len;
-        if (emit_bytes(&w, (const unsigned char[]){0x00}, 1) < 0) {
+        jmp_next_imm = w.len;
+        if (emit_u32(&w, 0) < 0) {
             return -1;
         }
     }
@@ -718,12 +717,8 @@ int lp_x86_64_build_ret_stub(const struct probe_desc *desc,
 
     rel32 = (int32_t)(found_label - (jz_found_imm + sizeof(uint32_t)));
     memcpy(w.buf + jz_found_imm, &rel32, sizeof(rel32));
-    rel8 = (int8_t)(next_label - (jnz_next_imm + sizeof(int8_t)));
-    if (rel8 < 0) {
-        errno = ERANGE;
-        return -1;
-    }
-    memcpy(w.buf + jnz_next_imm, &rel8, sizeof(rel8));
+    rel32 = (int32_t)(next_label - (jmp_next_imm + sizeof(uint32_t)));
+    memcpy(w.buf + jmp_next_imm, &rel32, sizeof(rel32));
     rel32 = (int32_t)(loop_start - (jmp_loop_imm + sizeof(uint32_t)));
     memcpy(w.buf + jmp_loop_imm, &rel32, sizeof(rel32));
     rel32 = (int32_t)(fallback_label - (jae_loop_fallback_imm + sizeof(uint32_t)));
