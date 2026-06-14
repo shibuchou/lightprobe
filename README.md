@@ -16,7 +16,7 @@
 x86_64 + 动态库函数 + entry probe + return probe + event buffer + CLI 管理
 ```
 
-## 中文框架图
+## 框架图
 
 ![lightprobe 中文框架图](docs/figures/lightprobe_architecture_cn.svg)
 
