@@ -183,6 +183,7 @@ lightprobe/
 │   ├── targets/         # 端到端验证目标程序
 │   └── scripts/         # smoke、stress、benchmark 脚本
 └── docs/
+    ├── competition/       # 官方赛题信息、元数据和评分原件收录目录
     ├── member_a_runtime_layout.md
     ├── member_b_task.md
     ├── verification_and_benchmark.md
@@ -201,6 +202,7 @@ lightprobe/
 
 ## 文档导航
 
+- `docs/competition/README.md`：官方赛道信息、赛题编号、截止日期及评分原件获取状态。
 - `docs/project_structure.md`：项目目录和模块职责。
 - `docs/member_a_runtime_layout.md`：成员 A 的 runtime、entry/return probe 设计。
 - `docs/verification_and_benchmark.md`：验证矩阵、脚本用法、benchmark 输出。

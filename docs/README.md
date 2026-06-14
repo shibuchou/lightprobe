@@ -7,16 +7,19 @@
 1. `../README.md`
    - 项目入口、快速开始、CLI、验证矩阵和当前边界。
 
-2. `project_structure.md`
+2. `competition/README.md`
+   - 官方赛道信息、`proj40` 赛题身份、截止日期、官方来源和评分原件收录状态。
+
+3. `project_structure.md`
    - 仓库目录结构和各模块职责。
 
-3. `member_a_runtime_layout.md`
+4. `member_a_runtime_layout.md`
    - 成员 A 负责的 runtime、entry probe、return probe、shadow stack 和验证矩阵。
 
-4. `verification_and_benchmark.md`
+5. `verification_and_benchmark.md`
    - smoke 脚本、stress 脚本、benchmark 输出和 IFUNC 说明。
 
-5. `member_b_task.md`
+6. `member_b_task.md`
    - 成员 B controller 侧任务说明。
 
 ## 展示图示

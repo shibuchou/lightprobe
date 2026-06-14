@@ -1,0 +1,30 @@
+{
+  "retrieved_date": "2026-06-14",
+  "official_site": "https://os.xtnl.org.cn/",
+  "track": {
+    "id": "69af8389fc2469b05c0faaa0",
+    "type": "26OS_F",
+    "title": "2026年全国大学生计算机系统能力大赛-操作系统设计赛(全国)-OS功能挑战赛道",
+    "short_title": "OS功能挑战",
+    "stage": "初赛",
+    "start_date": "2026-03-18",
+    "end_date": "2026-06-30",
+    "registration_deadline": "2026-05-28",
+    "preliminary_submission_deadline": "2026-06-30",
+    "team_student_count": "1-3",
+    "advisor_limit": 2,
+    "final_requires_advisor": true
+  },
+  "topic": {
+    "code": "proj40",
+    "name": "轻量级用户态动态探针"
+  },
+  "api": {
+    "track_endpoint": "POST https://os.xtnl.org.cn/index.do",
+    "topic_endpoint": "POST https://os.xtnl.org.cn/topics.do"
+  },
+  "scoring_document": {
+    "publicly_retrieved": false,
+    "reason": "项目完整任务书和分项评分信息需要赛事官网登录；比赛 GitLab 账号不能登录赛事官网。"
+  }
+}
