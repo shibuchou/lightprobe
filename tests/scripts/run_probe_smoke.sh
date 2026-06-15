@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-cd /home/shibuchou/Desktop/lightprobe
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+cd "$(cd "$SCRIPT_DIR/../.." && pwd)"
 
 if [[ $# -lt 3 ]]; then
     echo "usage: $0 <target-binary> <func> <limit> [target-arg...]" >&2
