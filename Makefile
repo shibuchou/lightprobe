@@ -28,7 +28,6 @@ OBJS := \
 	$(BUILD_DIR)/injector/context_x86_64.o \
 	$(BUILD_DIR)/injector/probe_stub_x86_64.o \
 	$(BUILD_DIR)/injector/ret_stub_x86_64.o \
-	$(BUILD_DIR)/injector/xmm_save_restore_x86_64.o \
 	$(BUILD_DIR)/cli/main.o \
 	$(BUILD_DIR)/cli/cmd_attach.o \
 	$(BUILD_DIR)/cli/cmd_detach.o \

@@ -6,7 +6,6 @@ add_library(lightprobe_injector
     context_x86_64.S
     probe_stub_x86_64.S
     ret_stub_x86_64.S
-    xmm_save_restore_x86_64.S
 )
 
 target_include_directories(lightprobe_injector PUBLIC

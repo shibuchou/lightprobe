@@ -120,7 +120,7 @@ Note: The ~38 ms average represents the full CLI control-plane cost. The core pa
 
 ## 6. Floating-Point Register Preservation (P2)
 
-XMM0–XMM15 registers are saved and restored at the entry/exit of each probe stub, covering SSE floating-point paths affected by trampoline code.
+探针 stub 热路径仅使用通用寄存器（push/pop/syscall/lock cmpxchg），全程无 SSE/SSE2/AVX 指令，因此 XMM0–XMM15 不会被修改。这一设计使得浮点寄存器天然保留，无需额外的 save/restore 框架。
 
 **Verification** (`fp_probe` smoke test):
 
@@ -156,7 +156,7 @@ Multi-threaded probe under high-frequency signal delivery.
 - **attach/detach latency**: ~38 ms is CLI end-to-end (includes process startup, state file I/O). Core patch/unpatch phase not isolated yet.
 - **State file**: Uses global `/tmp/lightprobe_state.bin`. Tests must run sequentially to avoid race conditions.
 - **VM environment**: Lightprobe entry overhead on the constrained VM (1,259ns) slightly exceeds 1000ns due to elevated baseline; WSL2 on modern hardware (293ns) comfortably satisfies the threshold.
-- **XMM scope**: Saves/restores XMM0–XMM15; does not cover x87, MXCSR, or YMM extended states.
+- **XMM preservation**: XMM0-XMM15 are naturally preserved because the probe hot path only uses GP registers. No x87, MXCSR, or YMM state is touched by the stub code.
 
 ---
 

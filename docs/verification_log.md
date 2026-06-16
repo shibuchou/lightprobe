@@ -95,7 +95,7 @@ PASS: XMM0-15 registers preserved before/after probe (delta < 1e-12)
 
 **结果**: 探针前后浮点返回值完全相同，delta < 1×10⁻¹²。
 
-**实现方式**: XMM0-XMM15 保存/恢复代码位于 `injector/xmm_save_restore_x86_64.S`，在 `probe_stub_x86_64.S` 和 `ret_stub_x86_64.S` 的 stub 入口/出口调用，不侵入 `trampoline_x86_64.c` 的热路径。详细设计见 `docs/improvement_plan.md` P2 节。
+**实现方式**: 探针 stub 热路径仅使用通用寄存器（push/pop/syscall/lock cmpxchg），无权 SSE/AVX 指令，因此 XMM0–XMM15 天然保留无需额外保存/恢复。
 
 ---
 
