@@ -28,6 +28,7 @@ OBJS := \
 	$(BUILD_DIR)/injector/context_x86_64.o \
 	$(BUILD_DIR)/injector/probe_stub_x86_64.o \
 	$(BUILD_DIR)/injector/ret_stub_x86_64.o \
+	$(BUILD_DIR)/injector/xmm_save_restore_x86_64.o \
 	$(BUILD_DIR)/cli/main.o \
 	$(BUILD_DIR)/cli/cmd_attach.o \
 	$(BUILD_DIR)/cli/cmd_detach.o \
@@ -65,7 +66,13 @@ TARGET_BINS := \
 	$(BUILD_DIR)/tests/target_multithread_malloc \
 	$(BUILD_DIR)/tests/target_strlen_loop \
 	$(BUILD_DIR)/tests/target_write_loop \
-	$(BUILD_DIR)/tests/target_probe_stress
+	$(BUILD_DIR)/tests/target_probe_stress \
+	$(BUILD_DIR)/tests/target_getpid_bench \
+	$(BUILD_DIR)/tests/target_fp_probe \
+	$(BUILD_DIR)/tests/libfp_probe_target.so \
+	$(BUILD_DIR)/tests/target_signal_stress \
+	$(BUILD_DIR)/tests/libmulti_probe_target.so \
+	$(BUILD_DIR)/tests/target_multi_func
 
 test: $(UNIT_TESTS)
 	@for test in $(UNIT_TESTS); do \
@@ -109,3 +116,27 @@ $(BUILD_DIR)/tests/target_write_loop: tests/targets/target_write_loop.c
 $(BUILD_DIR)/tests/target_probe_stress: tests/targets/target_probe_stress.c
 	@mkdir -p $(dir $@)
 	$(CC) $(CFLAGS) -pthread -o $@ tests/targets/target_probe_stress.c
+
+$(BUILD_DIR)/tests/target_getpid_bench: tests/targets/target_getpid_bench.c
+	@mkdir -p $(dir $@)
+	$(CC) $(CFLAGS) -o $@ tests/targets/target_getpid_bench.c -lm
+
+$(BUILD_DIR)/tests/target_fp_probe: tests/targets/target_fp_probe.c $(BUILD_DIR)/tests/libfp_probe_target.so
+	@mkdir -p $(dir $@)
+	$(CC) $(CFLAGS) -L$(BUILD_DIR)/tests -Wl,-rpath,'$$ORIGIN' -o $@ tests/targets/target_fp_probe.c -lfp_probe_target -lm
+
+$(BUILD_DIR)/tests/libfp_probe_target.so: tests/targets/libfp_probe_target.c
+	@mkdir -p $(dir $@)
+	$(CC) $(CFLAGS) -shared -fPIC -fvisibility=hidden -o $@ tests/targets/libfp_probe_target.c -lm
+
+$(BUILD_DIR)/tests/libmulti_probe_target.so: tests/targets/libmulti_probe_target.c
+	@mkdir -p $(dir $@)
+	$(CC) $(CFLAGS) -shared -fPIC -fvisibility=hidden -o $@ tests/targets/libmulti_probe_target.c
+
+$(BUILD_DIR)/tests/target_multi_func: tests/targets/target_multi_func.c $(BUILD_DIR)/tests/libmulti_probe_target.so
+	@mkdir -p $(dir $@)
+	$(CC) $(CFLAGS) -L$(BUILD_DIR)/tests -Wl,-rpath,'$$ORIGIN' -o $@ tests/targets/target_multi_func.c -lmulti_probe_target
+
+$(BUILD_DIR)/tests/target_signal_stress: tests/targets/target_signal_stress.c
+	@mkdir -p $(dir $@)
+	$(CC) $(CFLAGS) -pthread -o $@ tests/targets/target_signal_stress.c

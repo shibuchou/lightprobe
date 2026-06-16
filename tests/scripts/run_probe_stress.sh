@@ -27,7 +27,7 @@ case "$func" in
         ;;
 esac
 
-run_sudo rm -f /tmp/lightprobe_state.bin
+run_sudo rm -f /tmp/lightprobe_state*.bin
 ./build/tests/target_probe_stress "$threads" "$sleep_ns" > /tmp/lightprobe_stress.log 2>&1 &
 target_pid=$!
 
@@ -35,7 +35,7 @@ cleanup() {
     run_sudo ./build/lightprobe detach --pid "$target_pid" --func "$func" >/dev/null 2>&1 || true
     kill "$target_pid" >/dev/null 2>&1 || true
     wait "$target_pid" 2>/dev/null || true
-    run_sudo rm -f /tmp/lightprobe_state.bin >/dev/null 2>&1 || true
+    run_sudo rm -f /tmp/lightprobe_state*.bin >/dev/null 2>&1 || true
 }
 trap cleanup EXIT
 
