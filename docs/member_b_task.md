@@ -212,11 +212,11 @@ mmap(NULL, size, prot, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0)
 
 ## 参考资料
 
-参考仓库在：
+参考仓库在本地 `reference/` 目录下：
 
 ```text
-/home/shibuchou/Desktop/reference/bpftime
-/home/shibuchou/Desktop/reference/lmp
+reference/bpftime
+reference/lmp
 ```
 
 参考方式：
