@@ -238,13 +238,16 @@ lightprobe/
 
 ## 文档导航
 
-- `docs/competition/README.md`：官方赛道信息、赛题编号、截止日期及评分原件获取状态。
-- `docs/project_structure.md`：项目目录和模块职责。
-- `docs/member_a_runtime_layout.md`：成员 A 的 runtime、entry/return probe 设计。
-- `docs/verification_and_benchmark.md`：验证矩阵、脚本用法、benchmark 输出。
-- `docs/member_b_task.md`：成员 B controller 任务说明。
-- `docs/figures/lightprobe_architecture_cn.svg`：中文框架图，可直接插入 README、报告或 PPT。
-- `docs/figures/lightprobe_architecture_cn.drawio`：可用 draw.io 继续编辑的源文件。
+- `docs/benchmark_report.md`：双环境 benchmark 完整报告 + uprobe 对比数据
+- `docs/verification_log.md`：所有端到端测试的实际执行记录与结果
+- `docs/improvement_plan.md`：完善计划 + 执行状态追踪
+- `docs/competition/README.md`：官方赛道信息、赛题编号、截止日期及评分原件获取状态
+- `docs/project_structure.md`：项目目录和模块职责
+- `docs/member_a_runtime_layout.md`：成员 A 的 runtime、entry/return probe 设计
+- `docs/verification_and_benchmark.md`：验证矩阵、脚本用法、benchmark 输出
+- `docs/member_b_task.md`：成员 B controller 任务说明
+- `docs/figures/lightprobe_architecture_cn.svg`：中文框架图，可直接插入 README、报告或 PPT
+- `docs/figures/lightprobe_architecture_cn.drawio`：可用 draw.io 继续编辑的源文件
 
 ## License
 

@@ -41,7 +41,7 @@ int resolve_symbol(
 );
 
 
-/* remote_mem.c */
+/* remote_mem_ptrace.c */
 
 int remote_read(
     pid_t pid,

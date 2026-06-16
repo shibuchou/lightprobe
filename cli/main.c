@@ -9,7 +9,7 @@ void lp_print_usage(const char *prog)
 {
     fprintf(stderr,
             "Usage:\n"
-            "  %s attach --pid <pid> --lib <lib> --func <func> [--ret]\n"
+            "  %s attach --pid <pid> --lib <lib> --func <func> [--addr <addr>] [--ret]\n"
             "  %s detach --pid <pid> --func <func>\n"
             "  %s enable --pid <pid> --func <func>\n"
             "  %s disable --pid <pid> --func <func>\n"
